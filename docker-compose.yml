@@ -1,0 +1,62 @@
+# Painel PDV C5 SN — orquestração para produção (ou um teste local via Docker).
+#
+# O Oracle (Consinco DESENV20/produção) é remoto — não sobe container de
+# banco aqui. O host que rodar `docker compose up` precisa ter rota de rede
+# até o Oracle (mesma exigência de hoje, via PM2/WSL2).
+#
+# Antes de subir:
+#   1. cp backend/.env.example backend/.env  e preencher com os valores reais
+#      (ORACLE_PASSWORD, JWT_*, ADMIN_SENHA_HASH, COOKIE_DOMAIN, etc.)
+#   2. FRONTEND_URL no backend/.env deve ser a URL pública que os usuários
+#      vão acessar (ex.: https://painel-pdv.supernosso.com.br) — é ela que o
+#      CORS do backend valida contra o header Origin do navegador.
+#   3. COOKIE_SECURE=true e COOKIE_DOMAIN=<domínio real> em produção (o
+#      backend recusa subir em produção com COOKIE_SECURE=false).
+#
+# O backend NÃO expõe porta pro host — só é alcançável pelo container do
+# frontend, dentro da rede interna do compose (o nginx do frontend faz proxy
+# de /api pra ele). Reduz a superfície exposta à internet a um único
+# container (o frontend/nginx).
+services:
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    environment:
+      NODE_ENV: production
+    networks:
+      - painel-pdv-c5-sn
+    healthcheck:
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://127.0.0.1:3003/health']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  frontend:
+    build:
+      context: ./frontend
+    restart: unless-stopped
+    ports:
+      - '80:80'
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - painel-pdv-c5-sn
+
+networks:
+  painel-pdv-c5-sn:
+    driver: bridge
+    ipam:
+      config:
+        # Sub-rede fixa fora da faixa 172.17-31.0.0/16 que o Docker sorteia
+        # por padrão — o Oracle (Consinco) vive em 172.19.0.169, então uma
+        # rede bridge auto-alocada nessa faixa faz o container tratar o
+        # Oracle como se fosse outro container da própria rede em vez de
+        # rotear pra fora (EHOSTUNREACH). Confirmado localmente: com a
+        # sub-rede automática (172.19.0.0/16) o login dava 500 por não
+        # conseguir abrir o pool Oracle.
+        - subnet: 10.89.0.0/24

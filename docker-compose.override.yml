@@ -1,0 +1,17 @@
+# Override só para teste LOCAL no Docker Desktop — não mexe no backend/.env
+# (que continua servindo o `npm run dev` normalmente). Sem isso o backend
+# recusa subir, porque o compose força NODE_ENV=production e o código exige
+# COOKIE_SECURE=true em produção.
+#
+# Não é a configuração real de produção (aquilo vai no backend/.env do
+# servidor de destino, com o domínio público real). É só pra você conseguir
+# ver o container rodando/saudável aqui no Docker Desktop.
+services:
+  backend:
+    environment:
+      COOKIE_SECURE: 'true'
+      COOKIE_DOMAIN: 'localhost'
+      FRONTEND_URL: 'http://localhost:8081'
+  frontend:
+    ports: !override
+      - '8081:80'

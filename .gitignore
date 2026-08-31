@@ -1,0 +1,23 @@
+# Dependências
+**/node_modules/
+
+# Builds
+**/dist/
+**/build/
+
+# Segredos — nunca versionar, só o .env.example serve de referência
+**/.env
+**/.env.local
+!**/.env.example
+
+# Logs
+**/*.log
+npm-debug.log*
+
+# Editor/SO
+.DS_Store
+.vscode/
+.idea/
+
+# Coverage de testes (se algum dia gerar relatório)
+**/coverage/
