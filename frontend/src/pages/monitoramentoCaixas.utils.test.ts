@@ -63,9 +63,9 @@ describe('contarPorStatus', () => {
 });
 
 describe('categoriaDoStatus', () => {
-  it('"Caixa aberto" e "Caixa em venda" caem na mesma categoria visual', () => {
-    expect(categoriaDoStatus('Caixa aberto')).toBe('ativo');
-    expect(categoriaDoStatus('Caixa em venda')).toBe('ativo');
+  it('"Caixa aberto" e "Caixa em venda" têm categorias visuais distintas', () => {
+    expect(categoriaDoStatus('Caixa aberto')).toBe('aberto');
+    expect(categoriaDoStatus('Caixa em venda')).toBe('venda');
   });
 
   it('mapeia os demais status conhecidos', () => {

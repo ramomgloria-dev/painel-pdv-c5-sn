@@ -35,6 +35,16 @@ const PASSOS_TUTORIAL: PassoTutorial[] = [
     texto: 'Escolha uma ou mais lojas pra ver só os caixas delas. Sem seleção nenhuma, mostra todas.',
   },
   {
+    alvoSelector: '[data-tutorial="filtro-status"]',
+    titulo: 'Filtre por status',
+    texto: 'Marque um ou mais status (aberto, fechado, em venda...) pra mostrar só os caixas nessa situação.',
+  },
+  {
+    alvoSelector: '[data-tutorial="busca-nro-caixa"]',
+    titulo: 'Busque por número do caixa',
+    texto: 'Digite o número do checkout pra achar ele rápido, mesmo com vários filtros de empresa/status já aplicados.',
+  },
+  {
     alvoSelector: '[data-tutorial="ao-vivo"]',
     titulo: 'Atualização automática',
     texto: 'A tela se atualiza sozinha a cada 30 segundos. Esse indicador mostra quando foi a última vez — e o botão ao lado força uma atualização na hora.',
@@ -240,16 +250,19 @@ export function MonitoramentoCaixas() {
             rotuloMultiplas={(n) => `${n} empresas selecionadas`}
           />
         </div>
-        <MultiSelectDropdown
-          options={OPCOES_STATUS}
-          selected={statusSelecionados}
-          onChange={setStatusSelecionados}
-          placeholderTodos="Todos os status"
-          semBusca
-          className="sm:w-52"
-          rotuloMultiplas={(n) => `${n} status selecionados`}
-        />
+        <div data-tutorial="filtro-status">
+          <MultiSelectDropdown
+            options={OPCOES_STATUS}
+            selected={statusSelecionados}
+            onChange={setStatusSelecionados}
+            placeholderTodos="Todos os status"
+            semBusca
+            className="sm:w-52"
+            rotuloMultiplas={(n) => `${n} status selecionados`}
+          />
+        </div>
         <input
+          data-tutorial="busca-nro-caixa"
           value={buscaCaixa}
           onChange={(e) => setBuscaCaixa(e.target.value)}
           inputMode="numeric"

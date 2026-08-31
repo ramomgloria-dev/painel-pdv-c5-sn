@@ -1,8 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Search, ShieldCheck, Building2, X, Save, RotateCcw, CheckCircle2 } from 'lucide-react';
+import { useOutletContext } from 'react-router-dom';
+import { Search, ShieldCheck, Building2, X, Save, RotateCcw, CheckCircle2, HelpCircle } from 'lucide-react';
 import { api } from '../lib/api';
 import { isAxiosErrorWithMessage } from '../auth/AuthContext';
 import { Pagination } from '../components/ui/Pagination';
+import { useTutorial, type PassoTutorial } from '../hooks/useTutorial';
+import { TutorialOverlay } from '../components/ui/TutorialOverlay';
+import type { AppLayoutContext } from '../components/layout/AppLayout';
 
 interface PermissaoCatalogo {
   id: number;
@@ -34,6 +38,24 @@ interface UsuarioDetalhe {
 }
 
 const TAMANHO_PAGINA = 20;
+
+const PASSOS_TUTORIAL: PassoTutorial[] = [
+  {
+    alvoSelector: '[data-tutorial="busca-usuario"]',
+    titulo: 'Busque um usuário',
+    texto: 'Digite o nome ou o login do usuário do Consinco pra encontrar ele e editar os acessos.',
+  },
+  {
+    alvoSelector: '[data-tutorial="lista-usuarios"]',
+    titulo: 'Escolha na lista',
+    texto: 'Clique num usuário da lista pra abrir o painel de edição dele ao lado.',
+  },
+  {
+    alvoSelector: '[data-tutorial="painel-edicao"]',
+    titulo: 'Páginas e empresas liberadas',
+    texto: 'Marque quais páginas o usuário pode acessar. Quando uma página usa recorte por empresa, aparece uma lista de empresas logo abaixo dela pra você escolher quais liberar. Não esqueça de clicar em "Salvar alterações" no final.',
+  },
+];
 
 function empresasParaMapa(lista: EmpresaConcedida[]): Map<number, Set<number>> {
   const mapa = new Map<number, Set<number>>();
@@ -230,11 +252,34 @@ export function AdministracaoPermissoes() {
     }
   }
 
+  const { novidadesAberto } = useOutletContext<AppLayoutContext>();
+  const tutorial = useTutorial('gestao_permissoes_v1', PASSOS_TUTORIAL);
+
   return (
     <div className="flex flex-col gap-5">
-      <div>
-        <h1 className="text-xl font-semibold text-ink">Gestão de Permissões</h1>
-        <p className="text-sm text-ink-muted">Escolha um usuário do Consinco e defina quais páginas — e quais empresas dentro delas — ele pode ver.</p>
+      <TutorialOverlay
+        ativo={tutorial.ativo && !novidadesAberto}
+        passo={tutorial.passo}
+        passoAtual={tutorial.passoAtual}
+        passoTotal={tutorial.passoTotal}
+        onProximo={tutorial.proximo}
+        onAnterior={tutorial.anterior}
+        onPular={tutorial.pular}
+      />
+
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-semibold text-ink">Gestão de Permissões</h1>
+          <p className="text-sm text-ink-muted">Escolha um usuário do Consinco e defina quais páginas — e quais empresas dentro delas — ele pode ver.</p>
+        </div>
+        <button
+          onClick={tutorial.reiniciar}
+          title="Rever tutorial desta página"
+          aria-label="Rever tutorial desta página"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-surface-muted hover:text-ink"
+        >
+          <HelpCircle className="h-4 w-4" />
+        </button>
       </div>
 
       {erro && (
@@ -245,7 +290,7 @@ export function AdministracaoPermissoes() {
 
       <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[340px_1fr]">
         <div className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4">
-          <div className="relative">
+          <div data-tutorial="busca-usuario" className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
             <input
               value={termoBusca}
@@ -255,7 +300,7 @@ export function AdministracaoPermissoes() {
             />
           </div>
 
-          <div className="flex min-h-[280px] flex-col divide-y divide-border">
+          <div data-tutorial="lista-usuarios" className="flex min-h-[280px] flex-col divide-y divide-border">
             {buscando && <p className="py-3 text-sm text-ink-muted">Carregando...</p>}
             {!buscando && resultados.length === 0 && <p className="py-3 text-sm text-ink-muted">Nenhum usuário encontrado.</p>}
             {!buscando &&
@@ -278,7 +323,7 @@ export function AdministracaoPermissoes() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-border bg-surface p-5">
+        <div data-tutorial="painel-edicao" className="rounded-2xl border border-border bg-surface p-5">
           {!identidade && !carregandoDetalhe && (
             <p className="py-10 text-center text-sm text-ink-muted">Selecione um usuário na lista pra editar os acessos dele.</p>
           )}

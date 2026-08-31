@@ -13,22 +13,24 @@ export interface GrupoLoja {
 }
 
 export const RESUMO_STATUS = [
-  { chave: 'Caixa aberto', rotulo: 'Abertos', cor: 'text-green-700 bg-green-50' },
+  { chave: 'Caixa aberto', rotulo: 'Abertos', cor: 'text-blue-700 bg-blue-50' },
   { chave: 'Caixa em venda', rotulo: 'Em venda', cor: 'text-green-700 bg-green-50' },
   { chave: 'Caixa fechado', rotulo: 'Fechados', cor: 'text-ink-muted bg-surface-muted' },
   { chave: 'Caixa com saída temporária', rotulo: 'Saída temporária', cor: 'text-amber-700 bg-amber-50' },
-  { chave: 'Devolução de Venda', rotulo: 'Devolução', cor: 'text-blue-700 bg-blue-50' },
+  { chave: 'Devolução de Venda', rotulo: 'Devolução', cor: 'text-purple-700 bg-purple-50' },
 ];
 
-// Categorias visuais dos quadradinhos: "Caixa aberto" e "Caixa em venda" viram
-// a mesma cor (verde) — pra quem está de olho no painel, as duas significam
-// "funcionando normalmente"; diferenciar por cor ali não ajudaria em nada e
-// só acrescentaria uma legenda a mais pra decorar.
+// Categorias visuais dos quadradinhos — cada status tem sua própria cor,
+// inclusive "Caixa aberto" (azul) separado de "Caixa em venda" (verde): são
+// situações diferentes (caixa ligado esperando cliente vs. já vendendo) e
+// precisam ser distinguíveis de relance na grade. "Devolução de Venda" usa
+// roxo pra não repetir o azul do "Aberto".
 export const CATEGORIA_TILE = {
-  ativo: { estilo: 'bg-green-50 border-green-200 text-green-700', rotulo: 'Aberto / em venda' },
+  aberto: { estilo: 'bg-blue-50 border-blue-200 text-blue-700', rotulo: 'Aberto' },
+  venda: { estilo: 'bg-green-50 border-green-200 text-green-700', rotulo: 'Em venda' },
   fechado: { estilo: 'bg-surface-muted border-border text-ink-muted', rotulo: 'Fechado' },
   saida: { estilo: 'bg-amber-50 border-amber-200 text-amber-700', rotulo: 'Saída temporária' },
-  devolucao: { estilo: 'bg-blue-50 border-blue-200 text-blue-700', rotulo: 'Devolução' },
+  devolucao: { estilo: 'bg-purple-50 border-purple-200 text-purple-700', rotulo: 'Devolução' },
   outro: { estilo: 'bg-surface-muted border-border text-ink-muted', rotulo: 'Outro' },
 } as const;
 
@@ -37,8 +39,9 @@ export type CategoriaTile = keyof typeof CATEGORIA_TILE;
 export function categoriaDoStatus(status: string): CategoriaTile {
   switch (status) {
     case 'Caixa aberto':
+      return 'aberto';
     case 'Caixa em venda':
-      return 'ativo';
+      return 'venda';
     case 'Caixa fechado':
       return 'fechado';
     case 'Caixa com saída temporária':
