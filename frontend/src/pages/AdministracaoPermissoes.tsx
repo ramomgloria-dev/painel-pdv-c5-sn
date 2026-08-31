@@ -324,8 +324,8 @@ export function AdministracaoPermissoes() {
       )}
 
       <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[340px_1fr]">
-        <div className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4">
-          <div data-tutorial="busca-usuario" className="relative">
+        <div className="flex h-[max(360px,min(600px,calc(100vh_-_220px)))] flex-col gap-3 rounded-2xl border border-border bg-surface p-4">
+          <div data-tutorial="busca-usuario" className="relative shrink-0">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
             <input
               value={termoBusca}
@@ -335,10 +335,11 @@ export function AdministracaoPermissoes() {
             />
           </div>
 
-          <div
-            data-tutorial="lista-usuarios"
-            className="flex min-h-[280px] max-h-[480px] flex-col divide-y divide-border overflow-y-auto"
-          >
+          {/* flex-1 + overflow: a lista rola dentro do próprio espaço que
+              sobra no card, então a paginação abaixo fica sempre visível,
+              ancorada no fim do card — não importa a altura da tela nem
+              quantos usuários apareçam. */}
+          <div data-tutorial="lista-usuarios" className="flex min-h-0 flex-1 flex-col divide-y divide-border overflow-y-auto">
             {buscando && <p className="py-3 text-sm text-ink-muted">Carregando...</p>}
             {!buscando && resultados.length === 0 && <p className="py-3 text-sm text-ink-muted">Nenhum usuário encontrado.</p>}
             {!buscando &&
@@ -374,7 +375,7 @@ export function AdministracaoPermissoes() {
               ))}
           </div>
 
-          <div className="border-t border-border pt-3">
+          <div className="shrink-0 border-t border-border pt-3">
             <Pagination pagina={pagina} totalPaginas={totalPaginas} total={totalUsuarios} rotuloItem="usuário" onChange={setPagina} disabled={buscando} />
           </div>
         </div>
