@@ -1,17 +1,27 @@
 # Override só para teste LOCAL no Docker Desktop — não mexe no backend/.env
-# (que continua servindo o `npm run dev` normalmente). Sem isso o backend
-# recusa subir, porque o compose força NODE_ENV=production e o código exige
-# COOKIE_SECURE=true em produção.
+# (que continua servindo o `npm run dev` normalmente). Não é a configuração
+# real de produção (aquilo vai no backend/.env do servidor de destino, com
+# o domínio público real).
 #
-# Não é a configuração real de produção (aquilo vai no backend/.env do
-# servidor de destino, com o domínio público real). É só pra você conseguir
-# ver o container rodando/saudável aqui no Docker Desktop.
+# COOKIE_DOMAIN/FRONTEND_URL apontam pro IP da rede da empresa (Wi-Fi,
+# 172.24.4.12 — ver `ipconfig`), não "localhost", de propósito: assim quem
+# mais estiver na mesma rede (mesma sala) também acessa via
+# http://172.24.4.12:8081 e o login funciona pra eles também. Login por
+# cookie exige acessar por ESSE endereço — acessar por "localhost" quebra o
+# cookie (domain não bate).
+#
+# NODE_ENV=development (só aqui, sobrescrevendo o `production` do
+# docker-compose.yml) pra poder usar COOKIE_SECURE=false: acesso é por HTTP
+# simples num IP, não HTTPS — o navegador só permite cookie "Secure" sem
+# HTTPS pra "localhost" especificamente, nunca pra um IP. Em produção de
+# verdade (domínio público, HTTPS de verdade) isso não se aplica.
 services:
   backend:
     environment:
-      COOKIE_SECURE: 'true'
-      COOKIE_DOMAIN: 'localhost'
-      FRONTEND_URL: 'http://localhost:8081'
+      NODE_ENV: 'development'
+      COOKIE_SECURE: 'false'
+      COOKIE_DOMAIN: '172.24.4.12'
+      FRONTEND_URL: 'http://172.24.4.12:8081'
   frontend:
     ports: !override
       - '8081:80'
