@@ -5,25 +5,39 @@
 #   - reiniciar o Windows, ou
 #   - reiniciar o WSL2 (`wsl --shutdown`), ou
 #   - o Docker Desktop/containers subirem de novo depois de um desses.
-# Isso porque o IP interno do WSL2 muda a cada reinício — o script já busca
-# o IP atual sozinho, então é só rodar de novo, sem precisar descobrir nada.
+# Isso porque o IP interno do WSL2 muda a cada reinício.
 #
 # Como rodar: abrir o PowerShell COMO ADMINISTRADOR (botão direito no ícone
-# do PowerShell > "Executar como administrador"), navegar até essa pasta e
-# rodar:
-#   .\expor-na-rede.ps1
+# do PowerShell > "Executar como administrador") e rodar:
+#   & "\\wsl.localhost\Ubuntu\home\ramomgloria\painel-pdv-c5-sn\windows\expor-na-rede.ps1"
+#
+# Um terminal ADMINISTRADOR às vezes não enxerga as distribuições WSL
+# registradas na sua sessão normal (é uma pegadinha conhecida do Windows,
+# nada errado com sua instalação). Se aparecer erro tipo "não tem
+# distribuições instaladas" ao rodar `wsl hostname -I` no PowerShell admin,
+# descubra o IP num terminal COMUM (não-admin, onde o WSL já funciona
+# normalmente) e passe ele direto:
+#   & "\\wsl.localhost\Ubuntu\...\expor-na-rede.ps1" -IpWsl 172.31.89.234
+
+param(
+    [string]$IpWsl
+)
 
 $ErrorActionPreference = 'Stop'
 
 $porta = 8081
 $ipWindowsNaRede = '172.24.4.12'  # ajustar aqui se o IP do ipconfig mudar
 
-Write-Host "Descobrindo o IP atual do WSL2..."
-$ipWsl = (wsl hostname -I).Trim().Split(' ')[0]
-if (-not $ipWsl) {
-    throw "Não consegui descobrir o IP do WSL2 — ele está rodando? Teste 'wsl hostname -I' manualmente."
+if ($IpWsl) {
+    Write-Host "Usando IP do WSL2 informado: $IpWsl"
+} else {
+    Write-Host "Descobrindo o IP atual do WSL2..."
+    $IpWsl = (wsl hostname -I).Trim().Split(' ')[0]
+    if (-not $IpWsl) {
+        throw "Não consegui descobrir o IP do WSL2 por aqui (comum em terminal Administrador). Abra um terminal comum, rode 'wsl hostname -I', e passe o resultado com -IpWsl <ip>."
+    }
+    Write-Host "WSL2 está em: $IpWsl"
 }
-Write-Host "WSL2 está em: $ipWsl"
 
 Write-Host "Removendo regra de encaminhamento antiga (se existir)..."
 netsh interface portproxy delete v4tov4 listenaddress=0.0.0.0 listenport=$porta 2>$null | Out-Null
