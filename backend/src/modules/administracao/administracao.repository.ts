@@ -34,6 +34,39 @@ export async function buscarUsuariosConsinco(
   return { usuarios: usuarios.rows ?? [], total: total.rows?.[0]?.TOTAL ?? 0 };
 }
 
+export interface ContagemAcessoRow {
+  CODUSUARIO: string;
+  TOTAL_PERMISSOES: number;
+  TOTAL_EMPRESAS: number;
+}
+
+/**
+ * Quantas páginas e quantas empresas (somando todas as páginas) cada
+ * usuário do lote tem hoje — só pra mostrar um resumo na lista de busca,
+ * sem precisar abrir cada um pra saber se já tem acesso.
+ */
+export async function contarAcessosPorUsuarios(
+  connection: oracledb.Connection,
+  codusuarios: string[],
+): Promise<ContagemAcessoRow[]> {
+  if (codusuarios.length === 0) return [];
+
+  const bindNames = codusuarios.map((_, i) => `:c${i}`);
+  const binds: Record<string, string> = {};
+  codusuarios.forEach((c, i) => {
+    binds[`c${i}`] = c;
+  });
+
+  const result = await connection.execute<ContagemAcessoRow>(
+    `SELECT codusuario AS "CODUSUARIO",
+            (SELECT COUNT(*) FROM tb_usuarios_permissoes p WHERE p.codusuario = u.codusuario) AS "TOTAL_PERMISSOES",
+            (SELECT COUNT(*) FROM tb_usuarios_empresas e WHERE e.codusuario = u.codusuario) AS "TOTAL_EMPRESAS"
+       FROM (SELECT DISTINCT codusuario FROM tb_usuarios_permissoes WHERE codusuario IN (${bindNames.join(', ')})) u`,
+    binds,
+  );
+  return result.rows ?? [];
+}
+
 export interface PermissaoCatalogoRow {
   ID: number;
   CHAVE: string;

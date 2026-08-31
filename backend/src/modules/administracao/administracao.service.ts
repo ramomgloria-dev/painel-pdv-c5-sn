@@ -7,6 +7,7 @@ import {
   buscarUsuariosConsinco,
   concederEmpresaPermissao,
   concederPermissao,
+  contarAcessosPorUsuarios,
   listarEmpresas,
   listarEmpresasConcedidas,
   listarPermissoesCatalogo,
@@ -23,11 +24,22 @@ export async function buscarUsuarios(termo: string, pagina: number, tamanhoPagin
   const page = Math.max(pagina || 1, 1);
   const offset = (page - 1) * pageSize;
 
-  const { usuarios, total } = await withConnection((connection) =>
-    buscarUsuariosConsinco(connection, { termo: termo.trim(), offset, pageSize }),
-  );
+  return withConnection(async (connection) => {
+    const { usuarios, total } = await buscarUsuariosConsinco(connection, { termo: termo.trim(), offset, pageSize });
+    const contagens = await contarAcessosPorUsuarios(
+      connection,
+      usuarios.map((u) => u.CODUSUARIO),
+    );
+    const contagemPorUsuario = new Map(contagens.map((c) => [c.CODUSUARIO, c]));
 
-  return { usuarios, total, page, pageSize, totalPaginas: Math.max(Math.ceil(total / pageSize), 1) };
+    const usuariosComContagem = usuarios.map((u) => ({
+      ...u,
+      TOTAL_PERMISSOES: contagemPorUsuario.get(u.CODUSUARIO)?.TOTAL_PERMISSOES ?? 0,
+      TOTAL_EMPRESAS: contagemPorUsuario.get(u.CODUSUARIO)?.TOTAL_EMPRESAS ?? 0,
+    }));
+
+    return { usuarios: usuariosComContagem, total, page, pageSize, totalPaginas: Math.max(Math.ceil(total / pageSize), 1) };
+  });
 }
 
 /**

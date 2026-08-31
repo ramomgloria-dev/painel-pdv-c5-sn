@@ -32,7 +32,12 @@ export async function getUsuarios(req: Request, res: Response): Promise<void> {
   const { termo, page, pageSize } = parsed.data;
   const resultado = await buscarUsuarios(termo, page, pageSize);
   res.json({
-    usuarios: resultado.usuarios.map((u) => ({ codusuario: u.CODUSUARIO, nome: u.NOME })),
+    usuarios: resultado.usuarios.map((u) => ({
+      codusuario: u.CODUSUARIO,
+      nome: u.NOME,
+      totalPermissoes: u.TOTAL_PERMISSOES,
+      totalEmpresas: u.TOTAL_EMPRESAS,
+    })),
     total: resultado.total,
     page: resultado.page,
     pageSize: resultado.pageSize,

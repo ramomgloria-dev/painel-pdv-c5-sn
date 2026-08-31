@@ -2,13 +2,7 @@ import { LogOut } from 'lucide-react';
 import { useAuth } from '../../auth/AuthContext';
 import { APP_VERSAO } from '../../theme/version';
 import { NovidadesModal, type UseNovidadesModalResult } from '../ui/NovidadesModal';
-
-function iniciais(nome: string): string {
-  const partes = nome.trim().split(/\s+/);
-  const primeira = partes[0]?.[0] ?? '';
-  const ultima = partes.length > 1 ? partes[partes.length - 1]?.[0] ?? '' : '';
-  return (primeira + ultima).toUpperCase();
-}
+import { iniciais } from '../../lib/iniciais';
 
 export function Header({ novidades }: { novidades: UseNovidadesModalResult }) {
   const { usuario, logout } = useAuth();

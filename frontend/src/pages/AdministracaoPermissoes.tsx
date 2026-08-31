@@ -1,12 +1,14 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ComponentType } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { Search, ShieldCheck, Building2, X, Save, RotateCcw, CheckCircle2, HelpCircle } from 'lucide-react';
+import { Search, ShieldCheck, Building2, X, Save, RotateCcw, CheckCircle2, HelpCircle, Store, LayoutGrid } from 'lucide-react';
 import { api } from '../lib/api';
-import { isAxiosErrorWithMessage } from '../auth/AuthContext';
+import { useAuth, isAxiosErrorWithMessage } from '../auth/AuthContext';
 import { Pagination } from '../components/ui/Pagination';
+import { Toggle } from '../components/ui/Toggle';
 import { useTutorial, type PassoTutorial } from '../hooks/useTutorial';
 import { TutorialOverlay } from '../components/ui/TutorialOverlay';
 import type { AppLayoutContext } from '../components/layout/AppLayout';
+import { iniciais } from '../lib/iniciais';
 
 interface PermissaoCatalogo {
   id: number;
@@ -23,7 +25,15 @@ interface EmpresaCatalogo {
 interface UsuarioBusca {
   codusuario: string;
   nome: string;
+  totalPermissoes: number;
+  totalEmpresas: number;
 }
+
+const ICONE_PERMISSAO: Record<string, { Icone: ComponentType<{ className?: string }>; cor: string }> = {
+  'monitoramento_caixas.view': { Icone: Store, cor: 'bg-amber-50 text-amber-600' },
+  'usuarios_permissoes.manage': { Icone: ShieldCheck, cor: 'bg-purple-50 text-purple-600' },
+};
+const ICONE_PERMISSAO_PADRAO = { Icone: LayoutGrid, cor: 'bg-surface-muted text-ink-muted' };
 
 interface EmpresaConcedida {
   permissaoId: number;
@@ -88,6 +98,7 @@ export function AdministracaoPermissoes() {
   const [originalEmpresas, setOriginalEmpresas] = useState<Map<number, Set<number>>>(new Map());
   const [draftPermissoes, setDraftPermissoes] = useState<Set<number>>(new Set());
   const [draftEmpresas, setDraftEmpresas] = useState<Map<number, Set<number>>>(new Map());
+  const [filtroEmpresaPorPermissao, setFiltroEmpresaPorPermissao] = useState<Record<number, string>>({});
 
   const [carregandoDetalhe, setCarregandoDetalhe] = useState(false);
   const [salvando, setSalvando] = useState(false);
@@ -196,6 +207,29 @@ export function AdministracaoPermissoes() {
     });
   }
 
+  // "Marcar/desmarcar todas" opera sobre a lista de `empresas` já devolvida
+  // pelo backend — que, pra um gestor comum, já vem recortada só com as
+  // empresas que ele mesmo tem (ver administracao.service.ts). Por isso não
+  // precisa de nenhuma checagem extra aqui: nunca é possível marcar mais do
+  // que o catálogo permitido.
+  function marcarTodasEmpresas(permissaoId: number) {
+    setSalvo(false);
+    setDraftEmpresas((prev) => {
+      const novo = new Map(prev);
+      novo.set(permissaoId, new Set(empresas.map((e) => e.nroempresa)));
+      return novo;
+    });
+  }
+
+  function desmarcarTodasEmpresas(permissaoId: number) {
+    setSalvo(false);
+    setDraftEmpresas((prev) => {
+      const novo = new Map(prev);
+      novo.set(permissaoId, new Set());
+      return novo;
+    });
+  }
+
   function descartarAlteracoes() {
     setDraftPermissoes(new Set(originalPermissoes));
     setDraftEmpresas(new Map([...originalEmpresas].map(([k, v]) => [k, new Set(v)])));
@@ -252,6 +286,7 @@ export function AdministracaoPermissoes() {
     }
   }
 
+  const { usuario } = useAuth();
   const { novidadesAberto } = useOutletContext<AppLayoutContext>();
   const tutorial = useTutorial('gestao_permissoes_v1', PASSOS_TUTORIAL);
 
@@ -308,12 +343,30 @@ export function AdministracaoPermissoes() {
                 <button
                   key={u.codusuario}
                   onClick={() => selecionarUsuario(u)}
-                  className={`flex flex-col items-start gap-0.5 py-2.5 text-left transition-colors hover:bg-surface-muted ${
-                    identidade?.codusuario === u.codusuario ? 'text-brand-600' : 'text-ink'
+                  className={`flex items-center gap-2.5 rounded-lg py-2 text-left transition-colors hover:bg-surface-muted ${
+                    identidade?.codusuario === u.codusuario ? 'bg-brand-50' : ''
                   }`}
                 >
-                  <span className="text-sm font-medium">{u.nome}</span>
-                  <span className="text-xs text-ink-muted">{u.codusuario}</span>
+                  <span
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
+                      identidade?.codusuario === u.codusuario ? 'bg-brand-500 text-white' : 'bg-surface-muted text-ink-muted'
+                    }`}
+                  >
+                    {iniciais(u.nome)}
+                  </span>
+                  <span className="flex min-w-0 flex-col gap-0.5">
+                    <span className="truncate text-sm font-medium text-ink">{u.nome}</span>
+                    {u.totalPermissoes > 0 ? (
+                      <span className="w-fit rounded-full bg-green-50 px-2 py-0.5 text-[11px] font-medium text-green-700">
+                        {u.totalPermissoes} {u.totalPermissoes === 1 ? 'página' : 'páginas'}
+                        {u.totalEmpresas > 0 ? ` · ${u.totalEmpresas} ${u.totalEmpresas === 1 ? 'empresa' : 'empresas'}` : ''}
+                      </span>
+                    ) : (
+                      <span className="w-fit rounded-full bg-surface-muted px-2 py-0.5 text-[11px] font-medium text-ink-muted">
+                        Sem acesso
+                      </span>
+                    )}
+                  </span>
                 </button>
               ))}
           </div>
@@ -333,9 +386,14 @@ export function AdministracaoPermissoes() {
           {identidade && !carregandoDetalhe && (
             <div className="flex flex-col gap-6">
               <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-base font-semibold text-ink">{identidade.nome}</h2>
-                  <p className="text-sm text-ink-muted">{identidade.codusuario}</p>
+                <div className="flex items-center gap-3">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-500 text-sm font-semibold text-white">
+                    {iniciais(identidade.nome)}
+                  </span>
+                  <div>
+                    <h2 className="text-base font-semibold text-ink">{identidade.nome}</h2>
+                    <p className="text-sm text-ink-muted">{identidade.codusuario}</p>
+                  </div>
                 </div>
                 <button
                   onClick={fecharPainel}
@@ -355,34 +413,80 @@ export function AdministracaoPermissoes() {
                   {permissoes.map((permissao) => {
                     const concedida = draftPermissoes.has(permissao.id);
                     const empresasDaPermissao = draftEmpresas.get(permissao.id) ?? new Set<number>();
+                    const { Icone, cor } = ICONE_PERMISSAO[permissao.chave] ?? ICONE_PERMISSAO_PADRAO;
+                    const filtroEmpresa = filtroEmpresaPorPermissao[permissao.id] ?? '';
+                    const empresasFiltradas = empresas.filter((e) =>
+                      e.nomereduzido.toLowerCase().includes(filtroEmpresa.trim().toLowerCase()),
+                    );
+                    const todasMarcadas = empresas.length > 0 && empresasDaPermissao.size === empresas.length;
 
                     return (
-                      <div key={permissao.id} className="px-3 py-2.5">
-                        <label className="flex cursor-pointer items-center justify-between gap-3 text-sm">
-                          <span className="text-ink">{permissao.descricao}</span>
-                          <input
-                            type="checkbox"
-                            checked={concedida}
+                      <div key={permissao.id} className="px-3 py-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex min-w-0 items-center gap-3">
+                            <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${cor}`}>
+                              <Icone className="h-[18px] w-[18px]" />
+                            </span>
+                            <span className="truncate text-sm font-medium text-ink">{permissao.descricao}</span>
+                          </div>
+                          <Toggle
+                            ligado={concedida}
                             onChange={() => alternarPermissaoDraft(permissao)}
-                            className="h-4 w-4 accent-brand-500"
+                            label={`Conceder ${permissao.descricao}`}
                           />
-                        </label>
+                        </div>
 
                         {concedida && permissao.escopoEmpresa && (
-                          <div className="mt-2 ml-1 flex flex-col gap-1.5 border-l-2 border-border pl-3">
-                            <p className="flex items-center gap-1 text-xs font-medium text-ink-muted">
-                              <Building2 className="h-3.5 w-3.5" />
-                              Empresas nesta página
-                            </p>
-                            <div className="flex max-h-56 flex-col divide-y divide-border overflow-y-auto rounded-md border border-border">
-                              {empresas.map((empresa) => {
+                          <div className="mt-3 ml-12 flex flex-col gap-2 rounded-xl bg-surface-muted p-3">
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="flex items-center gap-1 text-xs font-medium text-ink-muted uppercase tracking-wide">
+                                <Building2 className="h-3.5 w-3.5" />
+                                Empresas nesta página
+                                <span className="font-normal normal-case text-[#9aa0a8]">
+                                  {empresasDaPermissao.size} de {empresas.length}
+                                </span>
+                              </p>
+                              {empresas.length > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    todasMarcadas ? desmarcarTodasEmpresas(permissao.id) : marcarTodasEmpresas(permissao.id)
+                                  }
+                                  className="shrink-0 text-xs font-semibold text-brand-600 hover:text-brand-700"
+                                >
+                                  {todasMarcadas ? 'Desmarcar todas' : 'Marcar todas'}
+                                </button>
+                              )}
+                            </div>
+
+                            {empresas.length > 6 && (
+                              <div className="relative">
+                                <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-muted" />
+                                <input
+                                  value={filtroEmpresa}
+                                  onChange={(e) =>
+                                    setFiltroEmpresaPorPermissao((prev) => ({ ...prev, [permissao.id]: e.target.value }))
+                                  }
+                                  placeholder="Filtrar empresa..."
+                                  className="w-full rounded-lg border border-border bg-surface py-1.5 pl-8 pr-2.5 text-xs outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+                                />
+                              </div>
+                            )}
+
+                            <div className="flex max-h-40 flex-col divide-y divide-border overflow-y-auto rounded-lg border border-border bg-surface">
+                              {empresasFiltradas.length === 0 && (
+                                <p className="px-2.5 py-2 text-xs text-ink-muted">Nenhuma empresa encontrada.</p>
+                              )}
+                              {empresasFiltradas.map((empresa) => {
                                 const empresaConcedida = empresasDaPermissao.has(empresa.nroempresa);
                                 return (
                                   <label
                                     key={empresa.nroempresa}
-                                    className="flex cursor-pointer items-center justify-between gap-3 px-2.5 py-1.5 text-xs"
+                                    className={`flex cursor-pointer items-center justify-between gap-3 px-2.5 py-1.5 text-xs ${
+                                      empresaConcedida ? 'font-semibold text-ink' : 'text-ink-muted'
+                                    }`}
                                   >
-                                    <span className="text-ink">{empresa.nomereduzido}</span>
+                                    <span>{empresa.nomereduzido}</span>
                                     <input
                                       type="checkbox"
                                       checked={empresaConcedida}
@@ -393,6 +497,12 @@ export function AdministracaoPermissoes() {
                                 );
                               })}
                             </div>
+
+                            {!usuario?.isAdmin && (
+                              <p className="text-[11px] text-ink-muted">
+                                Você só pode conceder, aqui, empresas que você mesmo já tem acesso.
+                              </p>
+                            )}
                           </div>
                         )}
                       </div>
