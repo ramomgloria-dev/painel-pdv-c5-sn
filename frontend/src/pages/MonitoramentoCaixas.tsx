@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { RefreshCw, AlertCircle, Inbox, ChevronDown, ChevronRight, HelpCircle } from 'lucide-react';
+import { RefreshCw, AlertCircle, Inbox, ChevronDown, ChevronRight, HelpCircle, WifiOff } from 'lucide-react';
 import { api } from '../lib/api';
 import { MultiSelectDropdown } from '../components/ui/MultiSelectDropdown';
 import { isAxiosErrorWithMessage } from '../auth/AuthContext';
@@ -11,6 +11,7 @@ import {
   agruparPorLoja,
   CATEGORIA_TILE,
   categoriaDoStatus,
+  contarOffline,
   contarPorStatus,
   filtrarCaixas,
   RESUMO_STATUS,
@@ -173,6 +174,7 @@ export function MonitoramentoCaixas() {
   );
 
   const resumo = useMemo(() => contarPorStatus(caixasFiltradas), [caixasFiltradas]);
+  const totalOffline = useMemo(() => contarOffline(caixasFiltradas), [caixasFiltradas]);
 
   const gruposPorLoja = useMemo(() => agruparPorLoja(caixasFiltradas), [caixasFiltradas]);
 
@@ -271,7 +273,7 @@ export function MonitoramentoCaixas() {
         />
       </div>
 
-      {resumo.length > 0 && (
+      {(resumo.length > 0 || totalOffline > 0) && (
         <div className="flex flex-wrap gap-3">
           {resumo.map((item) => (
             <div key={item.chave} className="flex w-44 flex-col gap-1 rounded-xl border border-border bg-surface px-4 py-3">
@@ -279,6 +281,15 @@ export function MonitoramentoCaixas() {
               <span className="text-2xl font-semibold text-ink">{item.total}</span>
             </div>
           ))}
+          {totalOffline > 0 && (
+            <div className="flex w-44 flex-col gap-1 rounded-xl border border-red-200 bg-red-50/40 px-4 py-3">
+              <span className="flex w-fit items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700">
+                <WifiOff className="h-3 w-3" />
+                PDV offline
+              </span>
+              <span className="text-2xl font-semibold text-ink">{totalOffline}</span>
+            </div>
+          )}
         </div>
       )}
 
@@ -427,13 +438,23 @@ function CaixaTile({ caixa, limiteRef }: { caixa: StatusCaixa; limiteRef: RefObj
     setDeslocamentoX(ajuste);
   }
 
+  const offline = caixa.online === false;
+
   return (
     <div ref={wrapperRef} className="group relative" onMouseEnter={ajustarPosicaoTooltip}>
       <div
-        className={`flex h-11 w-11 cursor-default items-center justify-center rounded-lg border text-sm font-semibold transition-transform group-hover:scale-105 ${categoria.estilo}`}
+        className={`flex h-11 w-11 cursor-default items-center justify-center rounded-lg border text-sm font-semibold transition-transform group-hover:scale-105 ${categoria.estilo} ${offline ? 'opacity-50 grayscale' : ''}`}
       >
         {caixa.nrocheckout}
       </div>
+      {offline && (
+        <span
+          title="PDV offline"
+          className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full border border-surface bg-red-500 text-white"
+        >
+          <WifiOff className="h-2.5 w-2.5" />
+        </span>
+      )}
       <div
         ref={tooltipRef}
         style={{ transform: `translateX(calc(-50% + ${deslocamentoX}px))` }}
@@ -443,6 +464,7 @@ function CaixaTile({ caixa, limiteRef }: { caixa: StatusCaixa; limiteRef: RefObj
           Caixa {caixa.nrocheckout} — {caixa.especie}
         </span>
         <span className="text-[11px] text-white/70">{caixa.status}</span>
+        {offline && <span className="text-[11px] font-medium text-red-300">PDV offline</span>}
       </div>
     </div>
   );

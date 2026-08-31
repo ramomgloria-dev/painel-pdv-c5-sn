@@ -4,6 +4,9 @@ export interface StatusCaixa {
   nrocheckout: number;
   especie: string;
   status: string;
+  // null = ainda sem verificação de rede (ex.: logo após o backend subir,
+  // antes do primeiro ciclo de ping rodar) — trata diferente de "offline".
+  online: boolean | null;
 }
 
 export interface GrupoLoja {
@@ -90,4 +93,10 @@ export function contarPorStatus(caixas: StatusCaixa[]) {
     ...item,
     total: caixas.filter((c) => c.status === item.chave).length,
   })).filter((item) => item.total > 0);
+}
+
+/** Quantos caixas têm o PDV confirmadamente offline (ignora `null` —
+ * "ainda sem verificação" não é a mesma coisa que "offline"). */
+export function contarOffline(caixas: StatusCaixa[]): number {
+  return caixas.filter((c) => c.online === false).length;
 }

@@ -1,6 +1,17 @@
 import 'dotenv/config';
 import { z } from 'zod';
 
+// z.coerce.boolean() faz Boolean(valor) por baixo dos panos — e Boolean("false")
+// é `true` em JS (qualquer string não-vazia é truthy). Isso faz "false" no
+// .env virar `true` silenciosamente. Usar sempre isto pra booleano vindo de
+// variável de ambiente.
+function booleanoEnv(padrao: boolean) {
+  return z
+    .string()
+    .optional()
+    .transform((v) => (v === undefined || v === '' ? padrao : v.trim().toLowerCase() === 'true'));
+}
+
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().int().positive().default(3003),
@@ -26,7 +37,7 @@ const envSchema = z.object({
   ADMIN_SENHA_HASH: z.string().min(20, 'ADMIN_SENHA_HASH precisa ser um hash bcrypt válido'),
 
   COOKIE_DOMAIN: z.string().min(1),
-  COOKIE_SECURE: z.coerce.boolean().default(false),
+  COOKIE_SECURE: booleanoEnv(false),
 
   RATE_LIMIT_LOGIN_WINDOW_MS: z.coerce.number().int().positive().default(900_000),
   RATE_LIMIT_LOGIN_MAX: z.coerce.number().int().positive().default(5),
@@ -34,7 +45,16 @@ const envSchema = z.object({
   LOG_LEVEL: z.string().default('info'),
   // false por padrão: pino-pretty é devDependency, não existe na imagem
   // Docker de produção. Ligar só em dev local (ver .env.example).
-  LOG_PRETTY: z.coerce.boolean().default(false),
+  LOG_PRETTY: booleanoEnv(false),
+
+  // ── Verificação de rede dos PDVs (ping) ──────────────────────────────────
+  // Depende do ambiente ter rota até a rede das lojas (192.168.x.x) — nem
+  // todo ambiente tem isso (ex.: dev local não tem). Desligar aqui só para
+  // ambientes sem essa rota, sem precisar mexer em código.
+  PDV_PING_HABILITADO: booleanoEnv(true),
+  PDV_PING_INTERVALO_MS: z.coerce.number().int().positive().default(300_000),
+  PDV_PING_TIMEOUT_S: z.coerce.number().int().positive().default(1),
+  PDV_PING_CONCORRENCIA: z.coerce.number().int().positive().default(50),
 });
 
 const parsed = envSchema.safeParse(process.env);

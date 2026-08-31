@@ -85,3 +85,21 @@ export async function listarStatusCaixas(
   );
   return result.rows ?? [];
 }
+
+export interface PdvRedeRow {
+  NROEMPRESA: number;
+  NROCHECKOUT: number;
+  IP: string;
+}
+
+/**
+ * IP de cada checkout, pra verificação de rede (ping) — usada só em
+ * background pra montar o mapa online/offline, nunca em resposta direta de
+ * API (não expor IP interno de loja pro frontend).
+ */
+export async function listarPdvsRede(connection: oracledb.Connection): Promise<PdvRedeRow[]> {
+  const result = await connection.execute<PdvRedeRow>(
+    `SELECT nroempresa AS "NROEMPRESA", nrocheckout AS "NROCHECKOUT", ip AS "IP" FROM painelpdvc5ia.vw_pdvoffline`,
+  );
+  return result.rows ?? [];
+}

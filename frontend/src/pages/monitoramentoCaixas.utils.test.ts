@@ -1,11 +1,25 @@
 import { describe, expect, it } from 'vitest';
-import { agruparPorLoja, categoriaDoStatus, contarPorStatus, filtrarCaixas, type StatusCaixa } from './monitoramentoCaixas.utils';
+import {
+  agruparPorLoja,
+  categoriaDoStatus,
+  contarOffline,
+  contarPorStatus,
+  filtrarCaixas,
+  type StatusCaixa,
+} from './monitoramentoCaixas.utils';
 
 const CAIXAS: StatusCaixa[] = [
-  { nroempresa: 57, nomereduzido: '057-SN-HOTPT', nrocheckout: 1, especie: 'Cupom Fiscal', status: 'Caixa em venda' },
-  { nroempresa: 57, nomereduzido: '057-SN-HOTPT', nrocheckout: 2, especie: 'Fechamento de Caixa', status: 'Caixa fechado' },
-  { nroempresa: 57, nomereduzido: '057-SN-HOTPT', nrocheckout: 12, especie: 'Abertura de Caixa', status: 'Caixa aberto' },
-  { nroempresa: 60, nomereduzido: '060-SN-LSANT', nrocheckout: 1, especie: 'Saída Temporária', status: 'Caixa com saída temporária' },
+  { nroempresa: 57, nomereduzido: '057-SN-HOTPT', nrocheckout: 1, especie: 'Cupom Fiscal', status: 'Caixa em venda', online: true },
+  { nroempresa: 57, nomereduzido: '057-SN-HOTPT', nrocheckout: 2, especie: 'Fechamento de Caixa', status: 'Caixa fechado', online: false },
+  { nroempresa: 57, nomereduzido: '057-SN-HOTPT', nrocheckout: 12, especie: 'Abertura de Caixa', status: 'Caixa aberto', online: null },
+  {
+    nroempresa: 60,
+    nomereduzido: '060-SN-LSANT',
+    nrocheckout: 1,
+    especie: 'Saída Temporária',
+    status: 'Caixa com saída temporária',
+    online: false,
+  },
 ];
 
 describe('filtrarCaixas', () => {
@@ -59,6 +73,21 @@ describe('contarPorStatus', () => {
 
   it('lista vazia não gera nenhuma contagem', () => {
     expect(contarPorStatus([])).toEqual([]);
+  });
+});
+
+describe('contarOffline', () => {
+  it('conta só os que têm online === false, ignorando null (sem verificação ainda)', () => {
+    // CAIXAS tem 2 com online:false e 1 com online:null — null não é offline
+    expect(contarOffline(CAIXAS)).toBe(2);
+  });
+
+  it('lista vazia conta zero', () => {
+    expect(contarOffline([])).toBe(0);
+  });
+
+  it('todos online conta zero', () => {
+    expect(contarOffline([{ ...CAIXAS[0]!, online: true }])).toBe(0);
   });
 });
 

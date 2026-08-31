@@ -33,6 +33,7 @@ export async function getStatusCaixas(req: Request, res: Response): Promise<void
       nrocheckout: c.NROCHECKOUT,
       especie: c.ESPECIE,
       status: c.STATUS,
+      online: c.ONLINE,
     })),
   });
 }

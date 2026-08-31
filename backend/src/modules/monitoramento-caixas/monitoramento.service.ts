@@ -3,8 +3,17 @@ import { ForbiddenError } from '../../utils/AppError.js';
 import type { AuthenticatedUser } from '../../types/auth.js';
 import { resolverEmpresasParaPermissao } from '../permissions/permissions.service.js';
 import { listarEmpresasFiltro, listarStatusCaixas, type StatusCaixaRow } from './monitoramento.repository.js';
+import { obterStatusRede } from './statusRede.service.js';
 
 const PERMISSAO = 'monitoramento_caixas.view';
+
+export interface StatusCaixaComRede extends StatusCaixaRow {
+  ONLINE: boolean | null;
+}
+
+function anotarStatusRede(caixas: StatusCaixaRow[]): StatusCaixaComRede[] {
+  return caixas.map((c) => ({ ...c, ONLINE: obterStatusRede(c.NROEMPRESA, c.NROCHECKOUT) }));
+}
 
 /**
  * Escopo de empresas do usuário NESTA página especificamente (concedido
@@ -12,7 +21,7 @@ const PERMISSAO = 'monitoramento_caixas.view';
  * ADMIN enxerga tudo. Evita que alguém troque o parâmetro `empresas` na
  * URL/API e veja o caixa de uma loja que não é dele (IDOR).
  */
-export async function obterStatusCaixas(user: AuthenticatedUser, filtroEmpresas?: number[]): Promise<StatusCaixaRow[]> {
+export async function obterStatusCaixas(user: AuthenticatedUser, filtroEmpresas?: number[]): Promise<StatusCaixaComRede[]> {
   const empresasPermitidas = await resolverEmpresasParaPermissao(user, PERMISSAO);
 
   if (filtroEmpresas && filtroEmpresas.length > 0) {
@@ -22,10 +31,12 @@ export async function obterStatusCaixas(user: AuthenticatedUser, filtroEmpresas?
         throw new ForbiddenError('Você não tem acesso às informações desta empresa.');
       }
     }
-    return withConnection((connection) => listarStatusCaixas(connection, filtroEmpresas));
+    const caixas = await withConnection((connection) => listarStatusCaixas(connection, filtroEmpresas));
+    return anotarStatusRede(caixas);
   }
 
-  return withConnection((connection) => listarStatusCaixas(connection, empresasPermitidas));
+  const caixas = await withConnection((connection) => listarStatusCaixas(connection, empresasPermitidas));
+  return anotarStatusRede(caixas);
 }
 
 export async function obterEmpresasFiltro(user: AuthenticatedUser) {

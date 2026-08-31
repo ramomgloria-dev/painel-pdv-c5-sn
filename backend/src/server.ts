@@ -10,6 +10,7 @@ import { errorHandler, notFoundHandler } from './middlewares/errorHandler.js';
 import { authRouter } from './modules/auth/auth.routes.js';
 import { monitoramentoRouter } from './modules/monitoramento-caixas/monitoramento.routes.js';
 import { administracaoRouter } from './modules/administracao/administracao.routes.js';
+import { iniciarVerificacaoRedePdvs, pararVerificacaoRedePdvs } from './modules/monitoramento-caixas/statusRede.service.js';
 
 const app = express();
 
@@ -48,6 +49,7 @@ app.use(errorHandler);
 
 async function start(): Promise<void> {
   await initOraclePool();
+  iniciarVerificacaoRedePdvs();
 
   const server = app.listen(env.PORT, () => {
     logger.info({ port: env.PORT, env: env.NODE_ENV }, 'Painel PDV C5 SN — backend iniciado');
@@ -55,6 +57,7 @@ async function start(): Promise<void> {
 
   const shutdown = async (signal: string): Promise<void> => {
     logger.info({ signal }, 'Encerrando servidor...');
+    pararVerificacaoRedePdvs();
     server.close();
     await closeOraclePool();
     process.exit(0);
