@@ -335,7 +335,10 @@ export function AdministracaoPermissoes() {
             />
           </div>
 
-          <div data-tutorial="lista-usuarios" className="flex min-h-[280px] flex-col divide-y divide-border">
+          <div
+            data-tutorial="lista-usuarios"
+            className="flex min-h-[280px] max-h-[480px] flex-col divide-y divide-border overflow-y-auto"
+          >
             {buscando && <p className="py-3 text-sm text-ink-muted">Carregando...</p>}
             {!buscando && resultados.length === 0 && <p className="py-3 text-sm text-ink-muted">Nenhum usuário encontrado.</p>}
             {!buscando &&
