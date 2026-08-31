@@ -21,3 +21,6 @@ npm-debug.log*
 
 # Coverage de testes (se algum dia gerar relatório)
 **/coverage/
+
+# Cache incremental do TypeScript
+**/*.tsbuildinfo
