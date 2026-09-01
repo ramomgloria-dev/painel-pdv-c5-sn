@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Sparkles, X } from 'lucide-react';
+import { ChevronDown, ChevronUp, Sparkles, X } from 'lucide-react';
 import { APP_VERSAO, CHANGELOG } from '../../theme/version';
 
 const CHAVE_ULTIMA_VERSAO_VISTA = 'ultima_versao_vista';
@@ -47,9 +47,12 @@ export function useNovidadesModal(): UseNovidadesModalResult {
 }
 
 export function NovidadesModal({ aberto, onFechar }: { aberto: boolean; onFechar: () => void }) {
+  const [historicoAberto, setHistoricoAberto] = useState(false);
+
   if (!aberto) return null;
 
   const entrada = CHANGELOG[APP_VERSAO];
+  const versoesAnteriores = Object.entries(CHANGELOG).filter(([versao]) => versao !== APP_VERSAO);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onClick={onFechar}>
@@ -85,6 +88,39 @@ export function NovidadesModal({ aberto, onFechar }: { aberto: boolean; onFechar
               </li>
             ))}
           </ul>
+        )}
+
+        {versoesAnteriores.length > 0 && (
+          <div className="flex flex-col gap-3 border-t border-border pt-3">
+            <button
+              type="button"
+              onClick={() => setHistoricoAberto((v) => !v)}
+              className="flex items-center gap-1.5 self-start text-xs font-medium text-ink-muted transition-colors hover:text-ink"
+            >
+              {historicoAberto ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+              {historicoAberto ? 'Ocultar' : 'Ver'} histórico de versões anteriores
+            </button>
+
+            {historicoAberto && (
+              <div className="flex max-h-56 flex-col gap-3 overflow-y-auto pr-1">
+                {versoesAnteriores.map(([versao, entradaAnterior]) => (
+                  <div key={versao} className="flex flex-col gap-1.5">
+                    <p className="text-xs font-semibold text-ink-muted">
+                      Versão {versao} — {entradaAnterior.label}
+                    </p>
+                    <ul className="flex flex-col gap-1">
+                      {entradaAnterior.itens.map((item, i) => (
+                        <li key={i} className="flex items-start gap-2 text-xs text-ink-muted">
+                          <span className="mt-1 h-1 w-1 shrink-0 rounded-full bg-ink-muted/50" />
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         )}
 
         <button

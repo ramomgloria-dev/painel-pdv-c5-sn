@@ -20,7 +20,7 @@ export function Header({ novidades, onAbrirMenu }: { novidades: UseNovidadesModa
         <button
           onClick={novidades.abrirManualmente}
           className="truncate rounded-md text-xs font-medium text-ink-muted transition-colors hover:text-brand-600 hover:underline"
-          title="Ver novidades desta versão"
+          title="Ver novidades e histórico de versões"
         >
           Versão {APP_VERSAO}
         </button>
