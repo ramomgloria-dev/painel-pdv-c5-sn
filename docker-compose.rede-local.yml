@@ -3,6 +3,19 @@
 # real de produção (aquilo vai no backend/.env do servidor de destino, com
 # o domínio público real).
 #
+# IMPORTANTE: renomeado de "docker-compose.override.yml" para este nome de
+# propósito. O nome "docker-compose.override.yml" é aplicado AUTOMATICAMENTE
+# pelo Docker Compose sempre que alguém roda `docker compose up` na raiz do
+# projeto — inclusive em produção, sem querer, sem nenhuma flag extra. Isso
+# derrubaria NODE_ENV pra "development" e COOKIE_SECURE pra "false" bem no
+# servidor real, revogando a checagem de segurança que existe em
+# backend/src/config/env.ts (que hoje recusa subir em produção com
+# COOKIE_SECURE=false). Pra usar este arquivo de propósito, é preciso citá-lo
+# explicitamente:
+#   docker compose -f docker-compose.yml -f docker-compose.rede-local.yml up --build
+# Rodar só `docker compose up --build` (como em produção) IGNORA este
+# arquivo agora — do jeito certo.
+#
 # COOKIE_DOMAIN/FRONTEND_URL apontam pro IP da rede da empresa (Wi-Fi,
 # 172.24.4.12 — ver `ipconfig`), não "localhost", de propósito: assim quem
 # mais estiver na mesma rede (mesma sala) também acessa via
